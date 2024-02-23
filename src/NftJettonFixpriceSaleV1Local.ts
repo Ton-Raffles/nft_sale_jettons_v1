@@ -43,8 +43,6 @@ export class NftJettonFixpriceSaleV1Local {
 
   async getSaleData() {
     const res = await this.contract.invokeGetMethod("get_sale_data", []);
-    console.log(res.exit_code);
-    console.log(res.debugLogs);
     if (res.exit_code !== 0) {
       throw new Error("Unable to invoke get_sale_data on sale contract");
     }

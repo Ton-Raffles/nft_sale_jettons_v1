@@ -347,9 +347,6 @@ _ load_jetton_prices(slice prices_slice) inline {
                 .store_int(0, 1); ;; empty forward_payload
 
         send_raw_message(msg.end_cell(), 64);
-        ~dump(99);
-        ~dump(public_key);
-        ~dump(full_price);
         save_data(
             true,
             created_at,

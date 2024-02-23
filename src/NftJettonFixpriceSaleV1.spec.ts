@@ -124,7 +124,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const res = await sale.getSaleData();
 
@@ -196,8 +195,6 @@ describe("fix price jetton sell contract v1", () => {
       })
     );
 
-    console.log(r.exit_code);
-
     const deployPayload = beginCell()
       .storeUint(OperationCodes.Deploy, 32)
       .storeUint(0, 64)
@@ -266,7 +263,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const nftOwnershipAssignedCell = new Cell();
     nftOwnershipAssignedCell.bits.writeUint(0x05138d91, 32); // ownership_assigned
@@ -350,7 +346,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const nftOwnershipAssignedCell = new Cell();
     nftOwnershipAssignedCell.bits.writeUint(0x05138d91, 32); // ownership_assigned
@@ -457,7 +452,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const body = new Cell();
     body.bits.writeUint(1, 32); // op
@@ -508,7 +502,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const body = new Cell();
     body.bits.writeUint(3, 32); // op
@@ -525,7 +518,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(res.debugLogs);
     if (res.logs) {
       throw new Error(res.logs);
     }
@@ -543,7 +535,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(res.debugLogs);
     if (res.logs) {
       throw new Error(res.logs);
     }
@@ -579,7 +570,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const res = await sale.contract.sendInternalMessage(
       new InternalMessage({
@@ -626,7 +616,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const buyerAddress = randomAddress();
     const res = await sale.contract.sendInternalMessage(
@@ -758,7 +747,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const buyerAddress = randomAddress();
     const res = await sale.contract.sendInternalMessage(
@@ -887,7 +875,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const buyerAddress = randomAddress();
     const res = await sale.contract.sendInternalMessage(
@@ -937,7 +924,6 @@ describe("fix price jetton sell contract v1", () => {
           }),
         })
       );
-      console.log(r.exit_code);
 
       sale.contract.setBalance(toNano(228));
 
@@ -1069,7 +1055,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     sale.contract.setBalance(toNano(1));
 
@@ -1241,7 +1226,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     sale.contract.setBalance(toNano(1));
 
@@ -1372,7 +1356,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     sale.contract.setBalance(toNano(1));
 
@@ -1521,7 +1504,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     sale.contract.setBalance(toNano(1));
 
@@ -1597,7 +1579,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     sale.contract.setBalance(toNano(1));
 
@@ -1668,7 +1649,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const buyerAddress = randomAddress();
     let res = await sale.contract.sendInternalMessage(
@@ -1764,7 +1744,6 @@ describe("fix price jetton sell contract v1", () => {
         }),
       })
     );
-    console.log(r.exit_code);
 
     const transfer = new Builder();
     transfer.storeUint(0x18, 6);
