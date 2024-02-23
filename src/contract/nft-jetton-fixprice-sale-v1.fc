@@ -5,20 +5,25 @@
 ;; (slice, int) load_coins(slice s) asm( -> 1 0) "LDVARUINT16";
 
 
-int min_gas_amount() asm "1000000000 PUSHINT"; ;; 1 TON
+int min_gas_amount() asm "100000000 PUSHINT"; ;; 1 TON
+
+global int initialized;
 
 _ load_data() inline {
     var ds = get_data().begin_parse();
+    slice dv = ds~load_ref().begin_parse();
+    initialized = ds~load_uint(1);
     return (
-        ds~load_int(1),    ;; is_complete
-        ds~load_uint(32),   ;; created_at
-        ds~load_msg_addr(), ;; marketplace_address
-        ds~load_msg_addr(), ;; nft_address
-        ds~load_msg_addr(), ;; nft_owner_address
-        ds~load_coins(),    ;; full_price
-        ds~load_ref(),      ;; fees_cell
+        dv~load_int(1), ;; is_complete
+        dv~load_uint(32), ;; created_at
+        dv~load_msg_addr(), ;; marketplace_address
+        dv~load_msg_addr(), ;; nft_address
+        dv~load_msg_addr(), ;; nft_owner_address
+        ds~load_coins(), ;; full_price
+        ds~load_ref(), ;; fees_cell
         ds~load_int(1),     ;; jettons_configured
-        ds~load_dict()      ;; jettons_dict
+        ds~load_dict(),      ;; jettons_dict
+        ds~load_uint(256) ;; public_key
     );
 }
 
@@ -40,18 +45,22 @@ _ load_jetton_prices(slice prices_slice) inline {
     );
 }
 
-() save_data(int is_complete, int created_at, slice marketplace_address, slice nft_address, slice nft_owner_address, int full_price, cell fees_cell, int jettons_configured, cell jettons_dict) impure inline {
+() save_data(int is_complete, int created_at, slice marketplace_address, slice nft_address, slice nft_owner_address, int full_price, cell fees_cell, int jettons_configured, cell jettons_dict, int public_key) impure inline {
+    cell first_part = begin_cell()
+                            .store_int(is_complete, 1)
+                            .store_uint(created_at, 32)
+                            .store_slice(marketplace_address)
+                            .store_slice(nft_address)
+                            .store_slice(nft_owner_address)
+                    .end_cell();
     set_data(
-        begin_cell()
-            .store_int(is_complete, 1)
-            .store_uint(created_at, 32)
-            .store_slice(marketplace_address)
-            .store_slice(nft_address)
-            .store_slice(nft_owner_address)
+        begin_cell().store_ref(first_part)
+            .store_uint(initialized, 1)
             .store_coins(full_price)
             .store_ref(fees_cell)
             .store_int(jettons_configured, 1)
             .store_dict(jettons_dict) ;; jettons_dict
+            .store_uint(public_key, 256)
             .end_cell()
     );
 }
@@ -128,6 +137,7 @@ _ load_jetton_prices(slice prices_slice) inline {
         int full_price,
         cell fees_cell,
         cell jettons_dict,
+        int public_key,
 
         int my_balance,
         int msg_value,
@@ -181,7 +191,8 @@ _ load_jetton_prices(slice prices_slice) inline {
         full_price,
         fees_cell,
         true,
-        jettons_dict
+        jettons_dict,
+        public_key
     );
 }
 
@@ -194,6 +205,7 @@ _ load_jetton_prices(slice prices_slice) inline {
         int full_price,
         cell fees_cell,
         cell jettons_dict,
+        int public_key,
 
         int my_balance,
         int msg_value,
@@ -253,7 +265,8 @@ _ load_jetton_prices(slice prices_slice) inline {
         full_price,
         fees_cell,
         true,
-        jettons_dict
+        jettons_dict,
+        public_key
     );
 }
 
@@ -276,7 +289,8 @@ _ load_jetton_prices(slice prices_slice) inline {
         full_price,
         fees_cell,
         jettons_configured,
-        jettons_dict
+        jettons_dict,
+        public_key
     ) = load_data();
 
     int op = 0;
@@ -287,10 +301,37 @@ _ load_jetton_prices(slice prices_slice) inline {
         query_id = in_msg_body~load_uint(64);
     }
 
+    if (op == 1) { ;; just accept coins
+        return ();
+    }
+
+    if (op == 5){
+        slice signature = in_msg_body~load_bits(512);
+        
+        throw_unless(902, check_signature(cell_hash(get_data()), signature, public_key));
+
+        initialized = 1;
+
+        save_data(
+            is_complete,
+            created_at,
+            marketplace_address,
+            nft_address,
+            nft_owner_address,
+            full_price,
+            fees_cell,
+            jettons_configured,
+            jettons_dict,
+            public_key
+        );
+        return ();
+    }
+
     ;; alow cancel complete contract for fix bug with duplicate transfet nft to sale
     if (op == 3) { ;; cancel sale
         throw_unless(457, msg_value >= min_gas_amount());
         throw_unless(458, equal_slices(sender_address, nft_owner_address) | equal_slices(sender_address, marketplace_address));
+        throw_unless(903, initialized);
 
         var msg = begin_cell()
                 .store_uint(0x10, 6) ;; nobounce
@@ -306,7 +347,9 @@ _ load_jetton_prices(slice prices_slice) inline {
                 .store_int(0, 1); ;; empty forward_payload
 
         send_raw_message(msg.end_cell(), 64);
-
+        ~dump(99);
+        ~dump(public_key);
+        ~dump(full_price);
         save_data(
             true,
             created_at,
@@ -316,7 +359,8 @@ _ load_jetton_prices(slice prices_slice) inline {
             full_price,
             fees_cell,
             jettons_configured,
-            jettons_dict
+            jettons_dict,
+            public_key
         );
         return ();
     }
@@ -352,6 +396,11 @@ _ load_jetton_prices(slice prices_slice) inline {
             return ();
         }
 
+        if (initialized == 0) {
+            send_jettons(sender_address, query_id, buyer_address, jetton_amount, buyer_address, -1);
+            return ();
+        }
+
         buy_with_jettons(
             created_at,
             marketplace_address,
@@ -360,6 +409,7 @@ _ load_jetton_prices(slice prices_slice) inline {
             full_price,
             fees_cell,
             jettons_dict,
+            public_key,
 
             my_balance,
             msg_value,
@@ -375,6 +425,7 @@ _ load_jetton_prices(slice prices_slice) inline {
 
     ;; Throw if sale is complete
     throw_if(404, is_complete);
+    throw_unless(903, initialized);
 
     ifnot (is_initialized) {
 
@@ -393,7 +444,8 @@ _ load_jetton_prices(slice prices_slice) inline {
                 full_price,
                 fees_cell,
                 true, ;; set jettons configured 
-                new_jettons_dict
+                new_jettons_dict,
+                public_key
             );
             return ();
         }
@@ -411,7 +463,8 @@ _ load_jetton_prices(slice prices_slice) inline {
             full_price,
             fees_cell,
             jettons_configured,
-            jettons_dict
+            jettons_dict,
+            public_key
         );
 
         return ();
@@ -426,16 +479,13 @@ _ load_jetton_prices(slice prices_slice) inline {
             full_price,
             fees_cell,
             jettons_dict,
+            public_key,
 
             my_balance,
             msg_value,
             sender_address,
             0
         );
-        return ();
-    }
-
-    if (op == 1) { ;; just accept coins
         return ();
     }
 
@@ -452,9 +502,9 @@ _ load_jetton_prices(slice prices_slice) inline {
         full_price,
         fees_cell,
         jettons_configured,
-        jettons_dict
+        jettons_dict,
+        public_key
     ) = load_data();
-
     var (
         marketplace_fee_address,
         marketplace_fee,
