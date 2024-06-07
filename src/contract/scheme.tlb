@@ -1,0 +1,9 @@
+_ common_data:^ [ is_complete:Bool created_at:uint32 marketplace_address:MsgAddressInt nft_address:MsgAddressInt nft_owner_address:MsgAddressInt ]
+  initialized:Bool full_price:Coins fees_cell:^Cell jettons_configured:Bool jettons_dict:(HashmapE 256 jetton_price:Coins jetton_marketplace_fee:Coins jetton_royalty:Coins) 
+  public_key:uint256 = NftJettonFixpriceSaleV1Storage;
+
+accept_coins#1 query_id:uint64 = InternalMessage;
+
+cancel#3 query_id:uint64 = InternalMessage;
+
+deploy#5 query_id:uint64 signature:bits512 = InternalMessage;
