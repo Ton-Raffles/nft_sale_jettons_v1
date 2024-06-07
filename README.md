@@ -17,3 +17,7 @@ Contract will try to return it back, forwarding the rest of gas to sender, if:
 - the contract is not initialized
 
 Contract will return the rest of jetton amount if it is larger than `full_price`.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
