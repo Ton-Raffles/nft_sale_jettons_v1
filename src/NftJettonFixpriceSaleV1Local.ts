@@ -60,6 +60,8 @@ export class NftJettonFixpriceSaleV1Local {
       marketplaceFee,
       royaltyAddressSlice,
       royaltyAmount,
+      initialized,
+      publicKey,
     ] = res.result as [
       BN,
       BN,
@@ -72,6 +74,8 @@ export class NftJettonFixpriceSaleV1Local {
       Slice,
       BN,
       Slice,
+      BN,
+      BN,
       BN
     ];
 
@@ -91,6 +95,8 @@ export class NftJettonFixpriceSaleV1Local {
       marketplaceFee,
       royaltyAddress: royaltyAddressSlice.readAddress()!,
       royaltyAmount,
+      initialized: initialized.eqn(-1),
+      publicKey,
     };
   }
 
