@@ -6,9 +6,6 @@
 #include "constans.fc";
 #include "imports/stdlib.fc";
 
-
-int min_gas_amount() asm "100000000 PUSHINT"; ;; 1 TON
-
 global int initialized;
 
 _ load_data() inline {
@@ -148,7 +145,7 @@ _ load_jetton_prices(slice prices_slice) inline {
     ) = args;
 
     throw_unless(451, full_price != 0);
-    throw_unless(450, msg_value >= full_price + min_gas_amount());
+    throw_unless(450, msg_value >= full_price + get_compute_fee(0, 100000));
 
     var (
         marketplace_fee_address,
@@ -220,7 +217,7 @@ _ load_jetton_prices(slice prices_slice) inline {
 
     var (jetton_price, jetton_marketplace_fee, jetton_royalty) = load_jetton_prices(jetton_prices);
 
-    if ((jetton_amount < jetton_price) | (msg_value < min_gas_amount())) {
+    if ((jetton_amount < jetton_price) | (msg_value < get_compute_fee(0, 100000))) {
         send_jettons(wallet_address, query_id, buyer_address, jetton_amount, buyer_address, -1);
         return ();
     }
@@ -336,9 +333,36 @@ _ load_jetton_prices(slice prices_slice) inline {
         return ();
     }
 
+    if (op == 6){
+        throw_unless(458, equal_slices(sender_address, nft_owner_address));
+
+        if (in_msg_body~load_int(1)) {
+            full_price = in_msg_body~load_coins();
+        }
+        
+        if (in_msg_body~load_int(1)) {
+            jettons_configured = true;
+            jettons_dict = in_msg_body~load_dict();
+        }
+
+        save_data(
+            is_complete,
+            created_at,
+            marketplace_address,
+            nft_address,
+            nft_owner_address,
+            full_price,
+            fees_cell,
+            jettons_configured,
+            jettons_dict,
+            public_key
+        );
+        return ();
+    }
+
     ;; alow cancel complete contract for fix bug with duplicate transfet nft to sale
     if (op == 3) { ;; cancel sale
-        throw_unless(457, msg_value >= min_gas_amount());
+        throw_unless(457, msg_value >= get_compute_fee(0, 50000));
         throw_unless(458, equal_slices(sender_address, nft_owner_address) | equal_slices(sender_address, marketplace_address));
 
         var msg = begin_cell()

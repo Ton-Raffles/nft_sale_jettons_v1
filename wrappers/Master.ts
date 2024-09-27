@@ -104,6 +104,27 @@ export class Master implements Contract {
         });
     }
 
+    async sendChangePrice(
+        provider: ContractProvider,
+        via: Sender,
+        value: bigint,
+        queryId: bigint,
+        tonPrice?: bigint,
+        jettonPrices?: Dictionary<Address, JettonPrices>,
+    ) {
+        let sl = jettonPrices ? beginCell().storeDict(jettonPrices).endCell().beginParse() : null;
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: beginCell()
+                .storeUint(5, 32)
+                .storeUint(queryId, 64)
+                .storeMaybeCoins(tonPrice)
+                .storeMaybeSlice(sl)
+                .endCell(),
+        });
+    }
+
     async sendСancel(provider: ContractProvider, via: Sender, value: bigint, queryId: bigint) {
         await provider.internal(via, {
             value,

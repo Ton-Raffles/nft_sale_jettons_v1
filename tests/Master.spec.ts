@@ -1437,4 +1437,96 @@ describe('Master', () => {
 
         expect(await item.getOwner()).toEqualAddress(users[0].address);
     });
+
+    it('change ton price', async () => {
+        master = blockchain.openContract(
+            Master.createFromConfig(
+                {
+                    createdAt: 0n,
+                    marketplaceAddress: admins[0].address,
+                    nftAddress: item.address,
+                    fullPrice: toNano('1'),
+                    jettonsConfigured: false,
+                    feesCell: beginCell()
+                        .storeAddress(admins[2].address)
+                        .storeCoins(toNano('0.2'))
+                        .storeAddress(admins[3].address)
+                        .storeCoins(toNano('0.3'))
+                        .endCell(),
+                    publicKey: keyPair.publicKey,
+                },
+                masterCode,
+            ),
+        );
+
+        let jettonPrice = Dictionary.empty(Dictionary.Keys.Address(), createJettonPricesValue());
+        jettonPrice = jettonPrice.set(await jettonMinter1.getWalletAddressOf(master.address), {
+            fullPrice: toNano('10'),
+            marketplaceFee: toNano('1'),
+            royaltyAmount: toNano('1'),
+        });
+
+        jettonPrice = jettonPrice.set(await jettonMinter2.getWalletAddressOf(master.address), {
+            fullPrice: toNano('10'),
+            marketplaceFee: toNano('1'),
+            royaltyAmount: toNano('1'),
+        });
+
+        const deployResult = await master.sendDeploy(
+            deployer.getSender(),
+            toNano('0.05'),
+            0n,
+            sign(master.init?.data!.hash()!, keyPair.secretKey),
+            jettonPrice,
+        );
+
+        expect(deployResult.transactions).toHaveTransaction({
+            from: deployer.address,
+            to: master.address,
+            deploy: true,
+            success: true,
+        });
+
+        let masterData = await master.getSaleData();
+
+        expect(masterData.isComplete).toEqual(0n);
+        expect(masterData.createdAt).toEqual(0n);
+        expect(masterData.marketplaceAddress).toEqualAddress(admins[0].address);
+        expect(masterData.nftAddress).toEqualAddress(item.address);
+        expect(masterData.fullPrice).toEqual(toNano('1'));
+        expect(masterData.marketplaceFeeAddress).toEqualAddress(admins[2].address);
+        expect(masterData.marketplaceFee).toEqual(toNano('0.2'));
+        expect(masterData.royaltyAddress).toEqualAddress(admins[3].address);
+        expect(masterData.royaltyAmount).toEqual(toNano('0.3'));
+
+        let res = await item.sendTransfer(admins[1].getSender(), toNano('1'), master.address);
+
+        masterData = await master.getSaleData();
+
+        expect(masterData.isComplete).toEqual(0n);
+        expect(masterData.createdAt).toEqual(0n);
+        expect(masterData.marketplaceAddress).toEqualAddress(admins[0].address);
+        expect(masterData.nftOwnerAddress).toEqualAddress(admins[1].address);
+        expect(masterData.nftAddress).toEqualAddress(item.address);
+        expect(masterData.fullPrice).toEqual(toNano('1'));
+        expect(masterData.marketplaceFeeAddress).toEqualAddress(admins[2].address);
+        expect(masterData.marketplaceFee).toEqual(toNano('0.2'));
+        expect(masterData.royaltyAddress).toEqualAddress(admins[3].address);
+        expect(masterData.royaltyAmount).toEqual(toNano('0.3'));
+
+        res = await master.sendChangePrice(admins[1].getSender(), toNano('0.05'), 0n, toNano('2'));
+
+        masterData = await master.getSaleData();
+
+        expect(masterData.isComplete).toEqual(0n);
+        expect(masterData.createdAt).toEqual(0n);
+        expect(masterData.marketplaceAddress).toEqualAddress(admins[0].address);
+        expect(masterData.nftOwnerAddress).toEqualAddress(admins[1].address);
+        expect(masterData.nftAddress).toEqualAddress(item.address);
+        expect(masterData.fullPrice).toEqual(toNano('2'));
+        expect(masterData.marketplaceFeeAddress).toEqualAddress(admins[2].address);
+        expect(masterData.marketplaceFee).toEqual(toNano('0.2'));
+        expect(masterData.royaltyAddress).toEqualAddress(admins[3].address);
+        expect(masterData.royaltyAmount).toEqual(toNano('0.3'));
+    });
 });
